@@ -4,6 +4,7 @@ Class for parallelizing GridSearchCV jobs in scikit-learn
 
 from collections import defaultdict, Sized
 from functools import partial
+from itertools import islice
 import warnings
 
 import numpy as np
@@ -291,8 +292,7 @@ class GridSearchCV(BaseSearchCV):
 
         base_estimator = clone(self.estimator)
 
-        param_grid = [(parameters, train, test) for parameters in parameter_iterable
-                                                for train, test in list(cv.split(X, y, groups))]
+        param_grid = [(parameters, test_sequence_index) for parameters in parameter_iterable for test_sequence_index in range(n_splits)]
         # Because the original python code expects a certain order for the elements, we need to
         # respect it.
         indexed_param_grid = list(zip(range(len(param_grid)), param_grid))
@@ -308,10 +308,11 @@ class GridSearchCV(BaseSearchCV):
         fas = _fit_and_score
 
         def fun(tup):
-            (index, (parameters, train, test)) = tup
+            (index, (parameters, test_sequence_index)) = tup
             local_estimator = clone(base_estimator)
             local_X = X_bc.value
             local_y = y_bc.value
+            train, test = next(islice(cv.split(local_X, local_y, groups), test_sequence_index, test_sequence_index + 1))
             res = fas(local_estimator, local_X, local_y, scorer, train, test, verbose,
                       parameters, fit_params,
                       return_train_score=return_train_score,
