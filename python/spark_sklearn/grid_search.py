@@ -303,7 +303,7 @@ class GridSearchCV(BaseSearchCV):
         par_param_grid = self.sc.parallelize(indexed_param_grid, len(indexed_param_grid))
         X_bc = self.sc.broadcast(X)
         y_bc = self.sc.broadcast(y)
-        groups_bc = self.broadcast(groups)
+        groups_bc = self.sc.broadcast(groups)
 
         scorer = self.scorer_
         verbose = self.verbose
